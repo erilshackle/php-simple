@@ -1,0 +1,24 @@
+<IfModule mod_rewrite.c>
+  # Liga o mecanismo de reescrita
+  RewriteEngine On
+  
+# Options All -Indexes
+
+  # Define a base de reescrita como a raiz do site
+    RewriteBase /php_simple/
+
+  # Condição para ignorar a reescrita se a requisição for para a pasta 'assets'
+  # O '!' antes de '%{REQUEST_URI}' nega a condição
+  RewriteCond %{REQUEST_URI} !^/assets/.*$
+  
+  # Condição para ignorar se o arquivo solicitado existe
+  RewriteCond %{REQUEST_FILENAME} !-f
+  
+  # Condição para ignorar se o diretório solicitado existe
+  # RewriteCond %{REQUEST_FILENAME} !-d
+  
+  # Regra para reescrever todas as outras requisições para index.php
+  # A flag [L] indica que esta é a última regra a ser processada
+  # A flag [QSA] preserva os parâmetros da query string
+  RewriteRule ^(.*)$ main.php [L,QSA]
+</IfModule>

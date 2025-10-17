@@ -1,0 +1,131 @@
+# Documentação do Projeto "PHP Simple"
+
+## 1\. Visão Geral
+
+O **PHP Simple** é um micro-framework ou "boilerplate" simples e leve baseado em PHP puro, ideal para projetos pequenos e médios. Ele implementa um sistema básico de roteamento "Front Controller", autoloader de classes e helpers essenciais para manipulação de *templates* e banco de dados.
+
+O objetivo principal é oferecer uma estrutura de projeto organizada com baixo *overhead* para que o desenvolvedor possa focar rapidamente na lógica de negócio.
+
+## 2\. Estrutura de Diretórios
+
+O projeto segue uma estrutura de diretórios limpa e intuitiva:
+
+```
+/
+|-- assets/           # Arquivos estáticos (CSS, JS, Imagens, Fontes)
+|-- backend/          # Núcleo e lógica do sistema
+|   |-- configs/      # Arquivos de configuração (DB, etc.)
+|   |-- classes/      # Classes OOP (autoloader ativo)
+|   |-- functions/    # Funções auxiliares (helpers)
+|   |-- init.php      # Arquivo de inicialização do sistema
+|-- pages/            # Arquivos PHP que representam as páginas (Views/Controllers)
+|-- templates/        # Componentes de layout (header, footer, snippets)
+|-- .htaccess         # Configuração do reescrita de URL
+|-- main.php          # O "Front Controller" do projeto
+```
+
+## 3\. Fluxo de Execução
+
+1.  **Requisição URL:** Uma requisição chega ao servidor (ex: `/php_simple/sobre`).
+2.  **.htaccess:** O `.htaccess` reescreve a URL, direcionando todas as requisições não estáticas para o arquivo **`main.php`**.
+3.  **`main.php`:**
+      * Inclui o arquivo de inicialização: `require_once __DIR__ . '/backend/init.php';`.
+      * Chama o roteador principal: `routeToPage('php_simple');`.
+4.  **`backend/init.php` (Inicialização):**
+      * Define constantes de diretórios (**`ROOT`**, **`TEMPLATES`**, **`PAGES`**, **`BACKEND`**).
+      * Inclui todos os arquivos das pastas `configs/` e `functions/`.
+      * Configura o **`spl_autoload_register`** para carregar classes automaticamente da pasta `classes/`.
+5.  **Roteamento (`routeToPage`):** A função **`routeToPage`** analisa a URL e inclui o arquivo PHP correspondente na pasta **`pages/`**.
+6.  **Página/View:** O arquivo em `pages/` é executado, processa a lógica, e geralmente utiliza a função `layout()` para renderizar o conteúdo.
+
+## 4\. Roteamento (Mapeamento de URL para Arquivo)
+
+A função `routeToPage($site)` no `init.php` é responsável pelo roteamento.
+
+| URL Solicitada (ex: `$site = 'php_simple'`) | Caminho do Arquivo em `pages/` | Notas |
+| :--- | :--- | :--- |
+| `/php_simple/` | `pages/index.php` | Raiz do site. |
+| `/php_simple/sobre` | `pages/sobre.php` | Arquivo direto. |
+| `/php_simple/contato/` | `pages/contato/index.php` | Subdiretório com `index.php`. |
+| Qualquer outra | `pages/404.php` ou Erro 404 | Se nenhum arquivo/diretório for encontrado. |
+
+## 5\. Configurações
+
+As configurações do sistema devem ser feitas nos arquivos dentro de `backend/configs/`.
+
+### `backend/configs/database.php`
+
+Contém as constantes de acesso ao banco de dados:
+
+```php
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'seu_banco');
+define('DB_USER', 'seu_usuario');
+define('DB_PASS', 'sua_senha');
+define('DB_CHARSET', 'utf8mb4');
+```
+
+**Atenção:** É crucial alterar estes valores para os dados do seu ambiente.
+
+## 6\. Funções Auxiliares (Helpers)
+
+As funções utilitárias estão em `backend/functions/`.
+
+### Helpers Gerais (Em `backend/functions/functions.php`)
+
+| Função | Descrição | Uso Típico |
+| :--- | :--- | :--- |
+| `debug($var)` | Imprime o conteúdo de uma variável formatado (`<pre>`) e **finaliza a execução** (`exit`). | Debugging rápido. |
+| `template(string $filename, $data = [])` | Retorna o caminho de um arquivo de template (na pasta `templates/`). | Incluir snippets. |
+| `asset($file)` | Retorna o caminho completo de um arquivo dentro da pasta `assets/`. | Referenciar CSS, JS, imagens. |
+
+### Helpers de Layout (Em `backend/functions/pages.php`)
+
+| Função | Descrição | Uso Típico |
+| :--- | :--- | :--- |
+| `layout(string $header, ?string $footer = null)` | Inicia o sistema de layout. Carrega o `$header`, inicia o buffer de saída e registra o `$footer` para ser carregado no fim. | No topo de qualquer arquivo em `pages/`. Ex: `layout('header', 'footer');` |
+
+**Como Funciona `layout()`:**
+
+1.  Inclui o arquivo `$header.php` de `templates/`.
+2.  Inicia o buffer de saída (`ob_start()`).
+3.  Registra o `$footer.php` de `templates/` para ser carregado **após** a execução de todo o script da página, garantindo que o conteúdo da página esteja encapsulado entre o header e o footer.
+
+### Helpers de Banco de Dados (Em `backend/functions/database.php`)
+
+As funções utilizam a extensão **PDO** e o padrão *Prepared Statements* para segurança e performance.
+
+| Função | Descrição | Retorno |
+| :--- | :--- | :--- |
+| `db_connection()` | Obtém a instância da conexão PDO (Singleton). | Objeto `PDO`. |
+| `db_execute(string $sql, array $params = [])` | Executa `INSERT`, `UPDATE` ou `DELETE`. | Número de linhas afetadas. |
+| `db_fetch(string $sql, array $params = [])` | Executa `SELECT` e retorna **uma única linha**. | `array` associativo ou `false`. |
+| `db_fetch_all(string $sql, array $params = [])` | Executa `SELECT` e retorna **todas as linhas**. | `array` de arrays associativos. |
+
+## 7\. Autoloader de Classes
+
+O projeto utiliza o `spl_autoload_register` configurado no `backend/init.php` para carregar automaticamente classes que existam no diretório `backend/classes/`.
+
+**Exemplo:**
+Para usar uma classe chamada `App\Database` em seu código, basta criar o arquivo em:
+
+```
+backend/classes/App/Database.php
+```
+
+E a classe deve ser declarada com o namespace correspondente:
+
+```php
+<?php
+namespace App;
+
+class Database {
+    // ...
+}
+```
+
+Você pode então instanciá-la em qualquer lugar do projeto:
+
+```php
+$db = new App\Database();
+```
